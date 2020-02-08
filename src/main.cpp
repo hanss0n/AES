@@ -1,11 +1,11 @@
 #include <iostream>
 
-int Nb; //number of columns (32-bit words) comprising the State. Nb = 4.
-int Nk; //number of 32-bit words comprising the Cipher Key. Nk = 4.
-int Nr = 10; //Number of rounds, which is a function of Nk and Nb (which is fixed). For this standard, Nr = 10.
-int K; //Cipher key
+int num_columns; //number of columns (32-bit words) comprising the State. Nb = 4.
+int num_words_in_key; //number of 32-bit words comprising the Cipher Key. Nk = 4.
+int num_rounds = 10; //Number of rounds, which is a function of Nk and Nb (which is fixed). For this standard, Nr = 10.
+int cipher_key; //Cipher key
 
-unsigned char substitutionBox[256] = {
+unsigned char substitution_box[256] = {
         0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
         0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
         0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15,
@@ -23,7 +23,7 @@ unsigned char substitutionBox[256] = {
         0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
         0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16};
 
-unsigned char multBy2[] = {
+unsigned char mult_2[] = {
         0x00, 0x02, 0x04, 0x06, 0x08, 0x0a, 0x0c, 0x0e, 0x10, 0x12, 0x14, 0x16, 0x18, 0x1a, 0x1c, 0x1e,
         0x20, 0x22, 0x24, 0x26, 0x28, 0x2a, 0x2c, 0x2e, 0x30, 0x32, 0x34, 0x36, 0x38, 0x3a, 0x3c, 0x3e,
         0x40, 0x42, 0x44, 0x46, 0x48, 0x4a, 0x4c, 0x4e, 0x50, 0x52, 0x54, 0x56, 0x58, 0x5a, 0x5c, 0x5e,
@@ -41,7 +41,7 @@ unsigned char multBy2[] = {
         0xdb, 0xd9, 0xdf, 0xdd, 0xd3, 0xd1, 0xd7, 0xd5, 0xcb, 0xc9, 0xcf, 0xcd, 0xc3, 0xc1, 0xc7, 0xc5,
         0xfb, 0xf9, 0xff, 0xfd, 0xf3, 0xf1, 0xf7, 0xf5, 0xeb, 0xe9, 0xef, 0xed, 0xe3, 0xe1, 0xe7, 0xe5};
 
-unsigned char multBy3[] = {
+unsigned char mult_3[] = {
         0x00, 0x03, 0x06, 0x05, 0x0c, 0x0f, 0x0a, 0x09, 0x18, 0x1b, 0x1e, 0x1d, 0x14, 0x17, 0x12, 0x11,
         0x30, 0x33, 0x36, 0x35, 0x3c, 0x3f, 0x3a, 0x39, 0x28, 0x2b, 0x2e, 0x2d, 0x24, 0x27, 0x22, 0x21,
         0x60, 0x63, 0x66, 0x65, 0x6c, 0x6f, 0x6a, 0x69, 0x78, 0x7b, 0x7e, 0x7d, 0x74, 0x77, 0x72, 0x71,
@@ -60,7 +60,7 @@ unsigned char multBy3[] = {
         0x0b, 0x08, 0x0d, 0x0e, 0x07, 0x04, 0x01, 0x02, 0x13, 0x10, 0x15, 0x16, 0x1f, 0x1c, 0x19, 0x1a
 };
 
-unsigned char rCon[] = {
+unsigned char rcon[] = {
         0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a,
         0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39,
         0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a,
@@ -79,48 +79,48 @@ unsigned char rCon[] = {
         0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d};
 
 
-void keyExpansionCore(unsigned char *in, unsigned char i) {
+void key_expansion_core(unsigned char *in, unsigned char i) {
     unsigned int *q = (unsigned int *) in;
     *q = (*q >> 8) | ((*q & 0xff) << 24);
 
-    in[0] = substitutionBox[in[0]];
-    in[1] = substitutionBox[in[1]];
-    in[2] = substitutionBox[in[2]];
-    in[3] = substitutionBox[in[3]];
+    in[0] = substitution_box[in[0]];
+    in[1] = substitution_box[in[1]];
+    in[2] = substitution_box[in[2]];
+    in[3] = substitution_box[in[3]];
 
-    in[0] ^= rCon[i];
+    in[0] ^= rcon[i];
 }
 
-void keyExpansion(unsigned char *inputKey, unsigned char *expandedKey) {
+void key_expansion(const unsigned char *input_key, unsigned char *expanded_key) {
     for (int i = 0; i < 16; i++) {
-        expandedKey[i] = inputKey[i];
+        expanded_key[i] = input_key[i];
     }
 
-    int bytesGenerated = 16;
-    int rConIteration = 1;
+    int bytes_generated = 16;
+    int rcon_iteration = 1;
     unsigned char temp[4];
 
-    while (bytesGenerated < 176) {
+    while (bytes_generated < 176) {
         for (int i = 0; i < 4; i++) {
-            temp[i] = expandedKey[i + bytesGenerated - 4];
+            temp[i] = expanded_key[i + bytes_generated - 4];
         } //TODO: check loop logic here
-        if (bytesGenerated % 16 == 0) {
-            keyExpansionCore(temp, rConIteration++);
+        if (bytes_generated % 16 == 0) {
+            key_expansion_core(temp, rcon_iteration++);
         }
-        for (unsigned char i = 0; i < 4; i++) {
-            expandedKey[bytesGenerated] = expandedKey[bytesGenerated - 16] ^ temp[i]; //TODO: char cast???
-            bytesGenerated++;
+        for (unsigned char i : temp) {
+            expanded_key[bytes_generated] = expanded_key[bytes_generated - 16] ^ i; //TODO: char cast???
+            bytes_generated++;
         }
     }
 }
 
-void subBytes(unsigned char *state) {
+void sub_bytes(unsigned char *state) {
     for (int i = 0; i < 16; i++) {
-        state[i] = substitutionBox[state[i]];
+        state[i] = substitution_box[state[i]];
     }
 }
 
-void shiftRows(unsigned char *state) {
+void shift_rows(unsigned char *state) {
     unsigned char shifted[16];
     shifted[0] = state[0];
     shifted[1] = state[5];
@@ -147,42 +147,42 @@ void shiftRows(unsigned char *state) {
     }
 }
 
-void mixColumns(unsigned char *state) {
+void mix_columns(unsigned char *state) {
 
-    unsigned char mixedCols[16];
+    unsigned char mixed_cols[16];
 
-    mixedCols[0] = (unsigned char) (multBy2[state[0]] ^ multBy3[state[1]] ^ state[2] ^ state[3]);
-    mixedCols[1] = (unsigned char) (state[0] ^ multBy2[state[1]] ^ multBy3[state[2]] ^ state[3]);
-    mixedCols[2] = (unsigned char) (state[0] ^ state[1] ^ multBy2[state[2]] ^ multBy3[state[3]]);
-    mixedCols[3] = (unsigned char) (multBy3[state[0]] ^ state[1] ^ state[2] ^ multBy2[state[3]]);
+    mixed_cols[0] = (unsigned char) (mult_2[state[0]] ^ mult_3[state[1]] ^ state[2] ^ state[3]);
+    mixed_cols[1] = (unsigned char) (state[0] ^ mult_2[state[1]] ^ mult_3[state[2]] ^ state[3]);
+    mixed_cols[2] = (unsigned char) (state[0] ^ state[1] ^ mult_2[state[2]] ^ mult_3[state[3]]);
+    mixed_cols[3] = (unsigned char) (mult_3[state[0]] ^ state[1] ^ state[2] ^ mult_2[state[3]]);
 
-    mixedCols[4] = (unsigned char) (multBy2[state[4]] ^ multBy3[state[5]] ^ state[6] ^ state[7]);
-    mixedCols[5] = (unsigned char) (state[4] ^ multBy2[state[5]] ^ multBy3[state[6]] ^ state[7]);
-    mixedCols[6] = (unsigned char) (state[4] ^ state[5] ^ multBy2[state[6]] ^ multBy3[state[7]]);
-    mixedCols[7] = (unsigned char) (multBy3[state[4]] ^ state[5] ^ state[6] ^ multBy2[state[7]]);
+    mixed_cols[4] = (unsigned char) (mult_2[state[4]] ^ mult_3[state[5]] ^ state[6] ^ state[7]);
+    mixed_cols[5] = (unsigned char) (state[4] ^ mult_2[state[5]] ^ mult_3[state[6]] ^ state[7]);
+    mixed_cols[6] = (unsigned char) (state[4] ^ state[5] ^ mult_2[state[6]] ^ mult_3[state[7]]);
+    mixed_cols[7] = (unsigned char) (mult_3[state[4]] ^ state[5] ^ state[6] ^ mult_2[state[7]]);
 
-    mixedCols[8] = (unsigned char) (multBy2[state[8]] ^ multBy3[state[9]] ^ state[10] ^ state[11]);
-    mixedCols[9] = (unsigned char) (state[8] ^ multBy2[state[9]] ^ multBy3[state[10]] ^ state[11]);
-    mixedCols[10] = (unsigned char) (state[8] ^ state[9] ^ multBy2[state[10]] ^ multBy3[state[11]]);
-    mixedCols[11] = (unsigned char) (multBy3[state[8]] ^ state[9] ^ state[10] ^ multBy2[state[11]]);
+    mixed_cols[8] = (unsigned char) (mult_2[state[8]] ^ mult_3[state[9]] ^ state[10] ^ state[11]);
+    mixed_cols[9] = (unsigned char) (state[8] ^ mult_2[state[9]] ^ mult_3[state[10]] ^ state[11]);
+    mixed_cols[10] = (unsigned char) (state[8] ^ state[9] ^ mult_2[state[10]] ^ mult_3[state[11]]);
+    mixed_cols[11] = (unsigned char) (mult_3[state[8]] ^ state[9] ^ state[10] ^ mult_2[state[11]]);
 
-    mixedCols[12] = (unsigned char) (multBy2[state[12]] ^ multBy3[state[13]] ^ state[14] ^ state[15]);
-    mixedCols[13] = (unsigned char) (state[12] ^ multBy2[state[13]] ^ multBy3[state[14]] ^ state[15]);
-    mixedCols[14] = (unsigned char) (state[12] ^ state[13] ^ multBy2[state[14]] ^ multBy3[state[15]]);
-    mixedCols[15] = (unsigned char) (multBy3[state[12]] ^ state[13] ^ state[14] ^ multBy2[state[15]]);
+    mixed_cols[12] = (unsigned char) (mult_2[state[12]] ^ mult_3[state[13]] ^ state[14] ^ state[15]);
+    mixed_cols[13] = (unsigned char) (state[12] ^ mult_2[state[13]] ^ mult_3[state[14]] ^ state[15]);
+    mixed_cols[14] = (unsigned char) (state[12] ^ state[13] ^ mult_2[state[14]] ^ mult_3[state[15]]);
+    mixed_cols[15] = (unsigned char) (mult_3[state[12]] ^ state[13] ^ state[14] ^ mult_2[state[15]]);
 
     for (int i = 0; i < 16; ++i) {
-        state[i] = mixedCols[i];
+        state[i] = mixed_cols[i];
     }
 }
 
-void addRoundKey(unsigned char *state, unsigned char *roundKey) {
+void addRoundKey(unsigned char *state, const unsigned char *round_key) {
     for (int i = 0; i < 16; i++) {
-        state[i] ^= roundKey[i];
+        state[i] ^= round_key[i];
     }
 }
 
-void encrypt(unsigned char *message, unsigned char *key, unsigned char * expandedKey) {
+void encrypt(unsigned char *message, unsigned char *key, unsigned char * expanded_key) {
 
     unsigned char state[16];
     for (int i = 0; i < 16; i++) {
@@ -191,15 +191,15 @@ void encrypt(unsigned char *message, unsigned char *key, unsigned char * expande
 
     addRoundKey(state, key);
 
-    for (int round = 0; round < 9; round++) {
-        subBytes(state);
-        shiftRows(state);
-        mixColumns(state);
-        addRoundKey(state, expandedKey + (16 * (round + 1))); //TODO: need to add to this
+    for (int round = 1; round < num_rounds; ++round) {
+        sub_bytes(state);
+        shift_rows(state);
+        mix_columns(state);
+        addRoundKey(state, expanded_key + (16 * round)); //TODO: need to add to this
     }
-    subBytes(state);
-    shiftRows(state);
-    addRoundKey(state, expandedKey + 160);
+    sub_bytes(state);
+    shift_rows(state);
+    addRoundKey(state, expanded_key + 160);
 
     for (int i = 0; i < 16; ++i) {
         message[i] = state[i];
@@ -223,17 +223,16 @@ void print_hex(unsigned char x) {
 
 int main() {
 
-
     unsigned char key[16] = {0xF4,0xC0,0x20,0xA0,0xA1,0xF6,0x04,0xFD,0x34,0x3F,0xAC,0x6A,0x7E,0x6A,0xE0,0xF9};
     unsigned char message[16] = {0xF2,0x95,0xB9,0x31,0x8B,0x99,0x44,0x34,0xD9,0x3D,0x98,0xA4,0xE4,0x49,0xAF,0xD8};
 
-    unsigned char expandedKey[176];
-    keyExpansion(key, expandedKey);
+    unsigned char expanded_key[176];
+    key_expansion(key, expanded_key);
 
-    encrypt(message, key, expandedKey);
+    encrypt(message, key, expanded_key);
 
-    for (int i = 0; i < 16; i++) {
-        print_hex(message[i]);
+    for (unsigned char i : message) {
+        print_hex(i);
     }
 
 
