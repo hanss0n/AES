@@ -13,8 +13,10 @@ private:
     int num_words_in_key; //number of 32-bit words comprising the Cipher Key. Nk = 4.
     int num_rounds; //Number of rounds, which is a function of Nk and Nb (which is fixed). For this standard, Nr = 10.
     unsigned char * cipher_key; //Cipher key
-    unsigned char expanded_key[176];
-    unsigned char state[16];
+    unsigned char expanded_key[176]{};
+    unsigned char state[16]{};
+    int KEY_SIZE = 16;
+    int BLOCK_SIZE = 16;
 
     unsigned char substitution_box[256] = {
             0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -89,7 +91,7 @@ private:
             0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd,
             0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d};
 
-    void key_expansion(const unsigned char *input_key);
+    void expand_key(const unsigned char *input_key);
     void key_expansion_core(unsigned char *in, unsigned char i);
     void sub_bytes();
     void shift_rows();
@@ -99,6 +101,7 @@ private:
 
         public:
     explicit AES(unsigned char * key);
+    void encrypt_16_bytes(unsigned char *message);
     void encrypt(unsigned char *message);
 
 

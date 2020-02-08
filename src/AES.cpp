@@ -5,11 +5,12 @@
 #include "AES.h"
 
 AES::AES(unsigned char *key) : num_columns(4), num_words_in_key(4), num_rounds(10), cipher_key(key) {
-    key_expansion(cipher_key);
+    expand_key(cipher_key);
 }
 
+//TODO: add explanations
 void AES::key_expansion_core(unsigned char *in, unsigned char i) {
-    unsigned int *q = (unsigned int *) in;
+    auto *q = (unsigned int *) in;
     *q = (*q >> 8) | ((*q & 0xff) << 24);
 
     in[0] = substitution_box[in[0]];
@@ -20,7 +21,7 @@ void AES::key_expansion_core(unsigned char *in, unsigned char i) {
     in[0] ^= rcon[i];
 }
 
-void AES::key_expansion(const unsigned char *input_key) {
+void AES::expand_key(const unsigned char *input_key) {
     for (int i = 0; i < 16; i++) {
         expanded_key[i] = input_key[i];
     }
@@ -37,15 +38,15 @@ void AES::key_expansion(const unsigned char *input_key) {
             key_expansion_core(temp, rcon_iteration++);
         }
         for (unsigned char i : temp) {
-            expanded_key[bytes_generated] = expanded_key[bytes_generated - 16] ^ i; //TODO: char cast???
+            expanded_key[bytes_generated] = expanded_key[bytes_generated - 16] ^ i;
             bytes_generated++;
         }
     }
 }
 
 void AES::sub_bytes() {
-    for (int i = 0; i < 16; i++) {
-        state[i] = substitution_box[state[i]];
+    for (unsigned char & i : state) {
+        i = substitution_box[i];
     }
 }
 
@@ -71,6 +72,7 @@ void AES::shift_rows() {
     shifted[14] = state[6];
     shifted[15] = state[11];
 
+    //TODO: can probs be faster
     for (int i = 0; i < 16; ++i) {
         state[i] = shifted[i];
     }
@@ -111,7 +113,7 @@ void AES::add_round_key(const unsigned char *round_key) {
     }
 }
 
-void AES::encrypt(unsigned char *message) {
+void AES::encrypt_16_bytes(unsigned char *message) {
 
     for (int i = 0; i < 16; i++) {
         state[i] = message[i];
@@ -123,7 +125,7 @@ void AES::encrypt(unsigned char *message) {
         sub_bytes();
         shift_rows();
         mix_columns();
-        add_round_key(expanded_key + (16 * round)); //TODO: need to add to this
+        add_round_key(expanded_key + (16 * round));
     }
     sub_bytes();
     shift_rows();
@@ -131,6 +133,13 @@ void AES::encrypt(unsigned char *message) {
 
     for (int i = 0; i < 16; ++i) {
         message[i] = state[i];
+    }
+}
+
+void AES::encrypt(unsigned char *message) {
+
+    for (int i = 0; i < sizeof(message); i += 16) {
+        encrypt_16_bytes(message + i);
     }
 }
 
