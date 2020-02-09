@@ -5,28 +5,13 @@
 #include <algorithm>
 #include "AES.h"
 
-AES::AES(unsigned char *key) : num_columns(4), num_words_in_key(4), num_rounds(10), cipher_key(key) {
-    expand_key(cipher_key);
+AES::AES(unsigned char key[]) : num_columns(4), num_words_in_key(4), num_rounds(10), cipher_key(key) {
+    expand_key();
 }
 
-//TODO: add explanations
-void AES::key_expansion_core(unsigned char *in, unsigned char i) {
-    auto *q = (unsigned int *) in;
-    *q = (*q >> 8U) | ((*q & 0xffU) << 24U);
+void AES::expand_key() {
 
-    in[0] = substitution_box[in[0]];
-    in[1] = substitution_box[in[1]];
-    in[2] = substitution_box[in[2]];
-    in[3] = substitution_box[in[3]];
-
-    in[0] ^= rcon[i];
-}
-
-void AES::expand_key(const unsigned char * input_key) {
-
-    for (int i = 0; i < 16; i++) {
-        expanded_key[i] = input_key[i];
-    }
+    std::copy(cipher_key, cipher_key + 16, expanded_key);
 
     int bytes_generated = 16;
     int rcon_iteration = 1;
@@ -37,7 +22,14 @@ void AES::expand_key(const unsigned char * input_key) {
             temp[i] = expanded_key[i + bytes_generated - 4];
         }
         if (bytes_generated % 16 == 0) {
-            key_expansion_core(temp, rcon_iteration++);
+            auto *q = (unsigned int *) temp;
+            *q = (*q >> 8U) | ((*q & 0xffU) << 24U);
+
+            for (unsigned char &i : temp) {
+                i = substitution_box[i];
+            }
+            temp[0] ^= rcon[rcon_iteration++];
+
         }
         for (unsigned char i : temp) {
             expanded_key[bytes_generated] = expanded_key[bytes_generated - 16] ^ i;
@@ -53,26 +45,15 @@ void AES::sub_bytes() {
 }
 
 void AES::shift_rows() {
+
     unsigned char shifted[16];
-    shifted[0] = state[0];
-    shifted[1] = state[5];
-    shifted[2] = state[10];
-    shifted[3] = state[15];
 
-    shifted[4] = state[4];
-    shifted[5] = state[9];
-    shifted[6] = state[14];
-    shifted[7] = state[3];
-
-    shifted[8] = state[8];
-    shifted[9] = state[13];
-    shifted[10] = state[2];
-    shifted[11] = state[7];
-
-    shifted[12] = state[12];
-    shifted[13] = state[1];
-    shifted[14] = state[6];
-    shifted[15] = state[11];
+    for (int i = 0; i < 4; i++) {
+        shifted[i] = state[i * 5];
+        shifted[i + 4] = state[abs((4 + i * 5) % 16)];
+        shifted[i + 8] = state[abs((8 + i * 5) % 16)];
+        shifted[i + 12] = state[abs((12 + i * 5) % 16)];
+    }
 
     std::copy(std::begin(shifted), std::end(shifted), state);
 }
@@ -80,41 +61,30 @@ void AES::shift_rows() {
 void AES::mix_columns() {
 
     unsigned char mixed_cols[16];
-
-    //TODO: fix clang tidy errors
-    mixed_cols[0] = (mult_2[state[0]] ^ mult_3[state[1]] ^ state[2] ^ state[3]);
-    mixed_cols[1] = (state[0] ^ mult_2[state[1]] ^ mult_3[state[2]] ^ state[3]);
-    mixed_cols[2] = (state[0] ^ state[1] ^ mult_2[state[2]] ^ mult_3[state[3]]);
-    mixed_cols[3] = (mult_3[state[0]] ^ state[1] ^ state[2] ^ mult_2[state[3]]);
-
-    mixed_cols[4] = (mult_2[state[4]] ^ mult_3[state[5]] ^ state[6] ^ state[7]);
-    mixed_cols[5] = (state[4] ^ mult_2[state[5]] ^ mult_3[state[6]] ^ state[7]);
-    mixed_cols[6] = (state[4] ^ state[5] ^ mult_2[state[6]] ^ mult_3[state[7]]);
-    mixed_cols[7] = (mult_3[state[4]] ^ state[5] ^ state[6] ^ mult_2[state[7]]);
-
-    mixed_cols[8] = (mult_2[state[8]] ^ mult_3[state[9]] ^ state[10] ^ state[11]);
-    mixed_cols[9] = (state[8] ^ mult_2[state[9]] ^ mult_3[state[10]] ^ state[11]);
-    mixed_cols[10] = (state[8] ^ state[9] ^ mult_2[state[10]] ^ mult_3[state[11]]);
-    mixed_cols[11] = (mult_3[state[8]] ^ state[9] ^ state[10] ^ mult_2[state[11]]);
-
-    mixed_cols[12] = (mult_2[state[12]] ^ mult_3[state[13]] ^ state[14] ^ state[15]);
-    mixed_cols[13] = (state[12] ^ mult_2[state[13]] ^ mult_3[state[14]] ^ state[15]);
-    mixed_cols[14] = (state[12] ^ state[13] ^ mult_2[state[14]] ^ mult_3[state[15]]);
-    mixed_cols[15] = (mult_3[state[12]] ^ state[13] ^ state[14] ^ mult_2[state[15]]);
-
+    for (int i = 0; i < 4; i++) {
+        mixed_cols[i * 4] = ((unsigned int) mult_2[state[i * 4]] ^ mult_3[state[i * 4 + 1]] ^ state[i * 4 + 2] ^
+                             state[i * 4 + 3]);
+        mixed_cols[i * 4 + 1] = ((unsigned int) state[i * 4] ^ mult_2[state[i * 4 + 1]] ^ mult_3[state[i * 4 + 2]] ^
+                                 state[i * 4 + 3]);
+        mixed_cols[i * 4 + 2] = ((unsigned int) state[i * 4] ^ state[i * 4 + 1] ^ mult_2[state[i * 4 + 2]] ^
+                                 mult_3[state[i * 4 + 3]]);
+        mixed_cols[i * 4 + 3] = ((unsigned int) mult_3[state[i * 4]] ^ state[i * 4 + 1] ^ state[i * 4 + 2] ^
+                                 mult_2[state[i * 4 + 3]]);
+    }
+    //TODO: get rid of copy and just move with ptr
     std::copy(std::begin(mixed_cols), std::end(mixed_cols), state);
 }
 
-void AES::add_round_key(const unsigned char *round_key) {
+void AES::add_round_key(const unsigned char round_key[]) {
     for (int i = 0; i < 16; i++) {
         state[i] ^= round_key[i];
     }
 }
 
+//TODO: fix padding
 unsigned char * AES::encrypt(unsigned char (&message)[16]) {
 
     std::copy(std::begin(message), std::end(message), state);
-
     add_round_key(cipher_key);
 
     for (int round = 1; round < num_rounds; ++round) {
