@@ -82,25 +82,25 @@ void AES::mix_columns() {
     unsigned char mixed_cols[16];
 
     //TODO: fix clang tidy errors
-    mixed_cols[0] = (unsigned char) (mult_2[state[0]] ^ mult_3[state[1]] ^ state[2] ^ state[3]);
-    mixed_cols[1] = (unsigned char) (state[0] ^ mult_2[state[1]] ^ mult_3[state[2]] ^ state[3]);
-    mixed_cols[2] = (unsigned char) (state[0] ^ state[1] ^ mult_2[state[2]] ^ mult_3[state[3]]);
-    mixed_cols[3] = (unsigned char) (mult_3[state[0]] ^ state[1] ^ state[2] ^ mult_2[state[3]]);
+    mixed_cols[0] = (mult_2[state[0]] ^ mult_3[state[1]] ^ state[2] ^ state[3]);
+    mixed_cols[1] = (state[0] ^ mult_2[state[1]] ^ mult_3[state[2]] ^ state[3]);
+    mixed_cols[2] = (state[0] ^ state[1] ^ mult_2[state[2]] ^ mult_3[state[3]]);
+    mixed_cols[3] = (mult_3[state[0]] ^ state[1] ^ state[2] ^ mult_2[state[3]]);
 
-    mixed_cols[4] = (unsigned char) (mult_2[state[4]] ^ mult_3[state[5]] ^ state[6] ^ state[7]);
-    mixed_cols[5] = (unsigned char) (state[4] ^ mult_2[state[5]] ^ mult_3[state[6]] ^ state[7]);
-    mixed_cols[6] = (unsigned char) (state[4] ^ state[5] ^ mult_2[state[6]] ^ mult_3[state[7]]);
-    mixed_cols[7] = (unsigned char) (mult_3[state[4]] ^ state[5] ^ state[6] ^ mult_2[state[7]]);
+    mixed_cols[4] = (mult_2[state[4]] ^ mult_3[state[5]] ^ state[6] ^ state[7]);
+    mixed_cols[5] = (state[4] ^ mult_2[state[5]] ^ mult_3[state[6]] ^ state[7]);
+    mixed_cols[6] = (state[4] ^ state[5] ^ mult_2[state[6]] ^ mult_3[state[7]]);
+    mixed_cols[7] = (mult_3[state[4]] ^ state[5] ^ state[6] ^ mult_2[state[7]]);
 
-    mixed_cols[8] = (unsigned char) (mult_2[state[8]] ^ mult_3[state[9]] ^ state[10] ^ state[11]);
-    mixed_cols[9] = (unsigned char) (state[8] ^ mult_2[state[9]] ^ mult_3[state[10]] ^ state[11]);
-    mixed_cols[10] = (unsigned char) (state[8] ^ state[9] ^ mult_2[state[10]] ^ mult_3[state[11]]);
-    mixed_cols[11] = (unsigned char) (mult_3[state[8]] ^ state[9] ^ state[10] ^ mult_2[state[11]]);
+    mixed_cols[8] = (mult_2[state[8]] ^ mult_3[state[9]] ^ state[10] ^ state[11]);
+    mixed_cols[9] = (state[8] ^ mult_2[state[9]] ^ mult_3[state[10]] ^ state[11]);
+    mixed_cols[10] = (state[8] ^ state[9] ^ mult_2[state[10]] ^ mult_3[state[11]]);
+    mixed_cols[11] = (mult_3[state[8]] ^ state[9] ^ state[10] ^ mult_2[state[11]]);
 
-    mixed_cols[12] = (unsigned char) (mult_2[state[12]] ^ mult_3[state[13]] ^ state[14] ^ state[15]);
-    mixed_cols[13] = (unsigned char) (state[12] ^ mult_2[state[13]] ^ mult_3[state[14]] ^ state[15]);
-    mixed_cols[14] = (unsigned char) (state[12] ^ state[13] ^ mult_2[state[14]] ^ mult_3[state[15]]);
-    mixed_cols[15] = (unsigned char) (mult_3[state[12]] ^ state[13] ^ state[14] ^ mult_2[state[15]]);
+    mixed_cols[12] = (mult_2[state[12]] ^ mult_3[state[13]] ^ state[14] ^ state[15]);
+    mixed_cols[13] = (state[12] ^ mult_2[state[13]] ^ mult_3[state[14]] ^ state[15]);
+    mixed_cols[14] = (state[12] ^ state[13] ^ mult_2[state[14]] ^ mult_3[state[15]]);
+    mixed_cols[15] = (mult_3[state[12]] ^ state[13] ^ state[14] ^ mult_2[state[15]]);
 
     std::copy(std::begin(mixed_cols), std::end(mixed_cols), state);
 }
@@ -111,11 +111,9 @@ void AES::add_round_key(const unsigned char *round_key) {
     }
 }
 
-void AES::encrypt_16_bytes(unsigned char *message) {
+unsigned char * AES::encrypt(unsigned char (&message)[16]) {
 
-    for (int i = 0; i < 16; i++) {
-        state[i] = message[i];
-    }
+    std::copy(std::begin(message), std::end(message), state);
 
     add_round_key(cipher_key);
 
@@ -129,19 +127,7 @@ void AES::encrypt_16_bytes(unsigned char *message) {
     shift_rows();
     add_round_key(expanded_key + 160);
 
-    /*
-    for (int i = 0; i < 16; ++i) {
-        message[i] = state[i];
-    }
-     */
-    std::copy(std::begin(state), std::end(state), message);
-}
-
-void AES::encrypt(unsigned char *message) {
-
-    for (unsigned int i = 0; i < sizeof(message); i += 16) {
-        encrypt_16_bytes(message + i);
-    }
+    return state;
 }
 
 

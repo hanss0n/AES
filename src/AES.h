@@ -99,10 +99,9 @@ private:
     void add_round_key(const unsigned char *round_key);
 
 
-        public:
+public:
     explicit AES(unsigned char * key);
-    void encrypt_16_bytes(unsigned char *message);
-    void encrypt(unsigned char *message);
+    unsigned char * encrypt(unsigned char (&message)[16]);
 
 
 };
