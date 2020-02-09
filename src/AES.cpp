@@ -2,6 +2,7 @@
 // Created by Björn Aurell Hansson on 2020-02-08.
 //
 
+#include <algorithm>
 #include "AES.h"
 
 AES::AES(unsigned char *key) : num_columns(4), num_words_in_key(4), num_rounds(10), cipher_key(key) {
@@ -21,7 +22,8 @@ void AES::key_expansion_core(unsigned char *in, unsigned char i) {
     in[0] ^= rcon[i];
 }
 
-void AES::expand_key(const unsigned char *input_key) {
+void AES::expand_key(const unsigned char * input_key) {
+
     for (int i = 0; i < 16; i++) {
         expanded_key[i] = input_key[i];
     }
@@ -33,7 +35,7 @@ void AES::expand_key(const unsigned char *input_key) {
     while (bytes_generated < 176) {
         for (int i = 0; i < 4; i++) {
             temp[i] = expanded_key[i + bytes_generated - 4];
-        } //TODO: check loop logic here
+        }
         if (bytes_generated % 16 == 0) {
             key_expansion_core(temp, rcon_iteration++);
         }
@@ -72,16 +74,14 @@ void AES::shift_rows() {
     shifted[14] = state[6];
     shifted[15] = state[11];
 
-    //TODO: can probs be faster
-    for (int i = 0; i < 16; ++i) {
-        state[i] = shifted[i];
-    }
+    std::copy(std::begin(shifted), std::end(shifted), state);
 }
 
 void AES::mix_columns() {
 
     unsigned char mixed_cols[16];
 
+    //TODO: fix clang tidy errors
     mixed_cols[0] = (unsigned char) (mult_2[state[0]] ^ mult_3[state[1]] ^ state[2] ^ state[3]);
     mixed_cols[1] = (unsigned char) (state[0] ^ mult_2[state[1]] ^ mult_3[state[2]] ^ state[3]);
     mixed_cols[2] = (unsigned char) (state[0] ^ state[1] ^ mult_2[state[2]] ^ mult_3[state[3]]);
@@ -102,9 +102,7 @@ void AES::mix_columns() {
     mixed_cols[14] = (unsigned char) (state[12] ^ state[13] ^ mult_2[state[14]] ^ mult_3[state[15]]);
     mixed_cols[15] = (unsigned char) (mult_3[state[12]] ^ state[13] ^ state[14] ^ mult_2[state[15]]);
 
-    for (int i = 0; i < 16; ++i) {
-        state[i] = mixed_cols[i];
-    }
+    std::copy(std::begin(mixed_cols), std::end(mixed_cols), state);
 }
 
 void AES::add_round_key(const unsigned char *round_key) {
@@ -131,9 +129,12 @@ void AES::encrypt_16_bytes(unsigned char *message) {
     shift_rows();
     add_round_key(expanded_key + 160);
 
+    /*
     for (int i = 0; i < 16; ++i) {
         message[i] = state[i];
     }
+     */
+    std::copy(std::begin(state), std::end(state), message);
 }
 
 void AES::encrypt(unsigned char *message) {
