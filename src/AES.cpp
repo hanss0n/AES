@@ -11,7 +11,7 @@ AES::AES(unsigned char *key) : num_columns(4), num_words_in_key(4), num_rounds(1
 //TODO: add explanations
 void AES::key_expansion_core(unsigned char *in, unsigned char i) {
     auto *q = (unsigned int *) in;
-    *q = (*q >> 8) | ((*q & 0xff) << 24);
+    *q = (*q >> 8U) | ((*q & 0xffU) << 24U);
 
     in[0] = substitution_box[in[0]];
     in[1] = substitution_box[in[1]];
@@ -45,7 +45,7 @@ void AES::expand_key(const unsigned char *input_key) {
 }
 
 void AES::sub_bytes() {
-    for (unsigned char & i : state) {
+    for (unsigned char &i : state) {
         i = substitution_box[i];
     }
 }
@@ -138,7 +138,7 @@ void AES::encrypt_16_bytes(unsigned char *message) {
 
 void AES::encrypt(unsigned char *message) {
 
-    for (int i = 0; i < sizeof(message); i += 16) {
+    for (unsigned int i = 0; i < sizeof(message); i += 16) {
         encrypt_16_bytes(message + i);
     }
 }
