@@ -3,7 +3,6 @@
 
 int main() {
 
-    //TODO: make this faster
     std::array<unsigned char, 16> key{};
     std::array<unsigned char, 16> message{};
 

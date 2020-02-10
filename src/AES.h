@@ -7,7 +7,6 @@
 
 #include <array>
 
-
 class AES {
 
 private:
@@ -94,17 +93,19 @@ private:
             0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d};
 
     void expand_key();
+
     void sub_bytes();
+
     void shift_rows();
+
     void mix_columns();
+
     void add_round_key(std::array<unsigned char, 16> &round_key);
-
-    //TODO: implement decryption
-
 
 public:
     explicit AES(std::array<unsigned char, 16> &key);
-    std::array<unsigned char, 16> & encrypt(std::array<unsigned char, 16> &message);
+
+    std::array<unsigned char, 16> &encrypt(std::array<unsigned char, 16> &message);
 };
 
 
