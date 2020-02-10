@@ -4,16 +4,15 @@
 int main() {
 
     //TODO: make this faster
-    unsigned char key[16];
-    unsigned char message[16];
-    size_t size_k, size_m;
+    std::array<unsigned char, 16> key{};
+    std::array<unsigned char, 16> message{};
 
-    if (fread(key, 4, 4, stdin)) {
+    if (fread(key.data(), 4, 4, stdin)) {
         AES aes(key);
         while (!feof(stdin)) {
-            if (fread(message, 4, 4, stdin)) {
+            if (fread(message.data(), 4, 4, stdin)) {
                 if (!feof(stdin)) {
-                    fwrite(aes.encrypt(message), 4, 4, stdout);
+                    fwrite(aes.encrypt(message).data(), 4, 4, stdout);
                 }
             }
         }

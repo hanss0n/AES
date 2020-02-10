@@ -5,25 +5,28 @@
 #include <algorithm>
 #include "AES.h"
 
-AES::AES(unsigned char key[]) : num_columns(4), num_words_in_key(4), num_rounds(10), cipher_key(key) {
+AES::AES(std::array<unsigned char, 16> &key) : num_columns(4), num_words_in_key(4), num_rounds(10), cipher_key(key) {
     expand_key();
 }
 
 void AES::expand_key() {
 
-    std::copy(cipher_key, cipher_key + 16, expanded_key);
+    std::copy(cipher_key.begin(), cipher_key.end(), expanded_key.begin());
 
     int bytes_generated = 16;
     int rcon_iteration = 1;
-    unsigned char temp[4];
+    std::array<unsigned char, 4> temp{};
 
     while (bytes_generated < 176) {
         for (int i = 0; i < 4; i++) {
             temp[i] = expanded_key[i + bytes_generated - 4];
         }
         if (bytes_generated % 16 == 0) {
-            auto *q = (unsigned int *) temp;
-            *q = (*q >> 8U) | ((*q & 0xffU) << 24U);
+            unsigned char q = temp[0];
+            temp[0] = temp[1];
+            temp[1] = temp[2];
+            temp[2] = temp[3];
+            temp[3] = q;
 
             for (unsigned char &i : temp) {
                 i = substitution_box[i];
@@ -46,7 +49,7 @@ void AES::sub_bytes() {
 
 void AES::shift_rows() {
 
-    unsigned char shifted[16];
+    std::array<unsigned char, 16> shifted{};
 
     for (int i = 0; i < 4; i++) {
         shifted[i] = state[i * 5];
@@ -55,12 +58,12 @@ void AES::shift_rows() {
         shifted[i + 12] = state[abs((12 + i * 5) % 16)];
     }
 
-    std::copy(std::begin(shifted), std::end(shifted), state);
+    state = shifted;
 }
 
 void AES::mix_columns() {
 
-    unsigned char mixed_cols[16];
+    std::array<unsigned char, 16> mixed_cols{};
     for (int i = 0; i < 4; i++) {
         mixed_cols[i * 4] = ((unsigned int) mult_2[state[i * 4]] ^ mult_3[state[i * 4 + 1]] ^ state[i * 4 + 2] ^
                              state[i * 4 + 3]);
@@ -72,30 +75,33 @@ void AES::mix_columns() {
                                  mult_2[state[i * 4 + 3]]);
     }
     //TODO: get rid of copy and just move with ptr
-    std::copy(std::begin(mixed_cols), std::end(mixed_cols), state);
+    state = mixed_cols;
 }
 
-void AES::add_round_key(const unsigned char round_key[]) {
+void AES::add_round_key(std::array<unsigned char, 16> &round_key) {
     for (int i = 0; i < 16; i++) {
         state[i] ^= round_key[i];
     }
 }
 
 //TODO: fix padding
-unsigned char * AES::encrypt(unsigned char (&message)[16]) {
+std::array<unsigned char, 16> &AES::encrypt(std::array<unsigned char, 16> &message) {
 
-    std::copy(std::begin(message), std::end(message), state);
+    state = message;
     add_round_key(cipher_key);
+    std::array<unsigned char, 16> round_key{};
 
     for (int round = 1; round < num_rounds; ++round) {
+        std::copy(expanded_key.begin() + (16*round), expanded_key.begin() + (16*round)+16, round_key.begin());
         sub_bytes();
         shift_rows();
         mix_columns();
-        add_round_key(expanded_key + (16 * round));
+        add_round_key(round_key);
     }
+    std::copy(expanded_key.begin() + 160, expanded_key.end(), round_key.begin());
     sub_bytes();
     shift_rows();
-    add_round_key(expanded_key + 160);
+    add_round_key(round_key);
 
     return state;
 }
